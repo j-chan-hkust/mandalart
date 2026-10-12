@@ -26,6 +26,24 @@ describe('local persistence', () => {
     const storage = memoryStorage(); storage.setItem(STORAGE_KEY, '{bad');
     expect(loadState(storage).writable).toBe(false); expect(storage.getItem(STORAGE_KEY)).toBe('{bad');
   });
+  it('saves the palette alongside the board and clears both together', () => {
+    const storage = memoryStorage(), board = { ...emptyBoard(), mainGoal: 'My plan' };
+    saveState(storage, board, 'graphite');
+    expect(loadState(storage).state).toEqual({ version: 1, board, theme: 'graphite' });
+    clearState(storage);
+    expect(loadState(storage).state).toEqual({ version: 1, board: emptyBoard() });
+  });
+  it('loads unknown palette preferences without rejecting valid board content', () => {
+    const storage = memoryStorage(), board = { ...emptyBoard(), mainGoal: 'Keep this' };
+    storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, board, theme: 'retired-palette' }));
+    expect(loadState(storage).state).toEqual({ version: 1, board, theme: 'cloud' });
+    expect(loadState(storage).writable).toBe(true);
+  });
+  it('preserves system appearance rather than saving its currently resolved color scheme', () => {
+    const storage = memoryStorage();
+    saveState(storage, emptyBoard(), 'system');
+    expect(loadState(storage).state.theme).toBe('system');
+  });
   it('rejects unknown schema versions and incomplete boards', () => {
     const storage = memoryStorage(); storage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, board: emptyBoard(), layout: 'full' }));
     expect(loadState(storage).writable).toBe(false);

@@ -100,6 +100,8 @@ Research background: [Godot's input API](https://docs.godotengine.org/en/4.6/cla
 - Fit the complete board and essential controls within the desktop browser viewport, including laptop screens, without page scrolling. Size grid rows from available viewport height; long text scrolls within its cell/editor.
 - Keep the interface limited to the board, Clear and navigation controls, save status, and compact keyboard/mode guidance. Omit decorative headings, slogans, progress counters, and subtree breadcrumbs.
 - Cells show their content or an empty-cell placeholder, without decorative captions or visible compass-direction labels. Retain descriptive accessibility labels.
+- Offer exactly two color schemes: Cloud for Light mode and Graphite for Dark mode. Provide a compact System/Light/Dark toolbar selector. System is the default and follows `prefers-color-scheme`, updating live when the user's OS/browser appearance changes. Light and Dark are saved manual overrides; choosing System resumes automatic behavior. Apply appearance to the entire interface, including editors, mode indicators, and confirmation dialogs.
+- Changing appearance preserves board content, navigation, and editor selection. Save the selected preference (`system`, `cloud`, or `graphite`) locally. Old saves without a preference follow the system. Clear resets to System along with board content. Retired light palettes map to Cloud and retired dark palettes map to Graphite without losing board content.
 - Input uses the same font, weight, line height, wrapping width, and horizontal/vertical centering as the finished text. Preserve the main goal's heavier weight in its editor. Long input scrolls inside the available cell space.
 - Use distinct colors for highlight, focus, and input modes, as requested in the README.
 - Supplement color with structural cues: a tinted highlight, a strong focus outline, and a recognizable text field with a caret.
@@ -164,11 +166,11 @@ Represent input targets explicitly as the main goal, a subgoal direction, or a s
 - Store exactly one board locally in the browser and automatically save edits, including text entered before leaving input mode.
 - Restore saved content after refresh or reopening the app. Start navigation at the main goal as specified above; held keys, input timers, and active editors are transient.
 - Use `localStorage` with versioned, app-specific keys as the proposed storage implementation.
-- Implementation: save synchronously on each content change using `mandalart.state.v1`. Its JSON payload contains `{ version: 1, board }`. Transient navigation state is not saved. There are no delayed autosave writes.
+- Implementation: save synchronously on each content or palette change using `mandalart.state.v1`. Its JSON payload contains `{ version: 1, board, theme }`, with `theme` optional for older saves. Transient navigation state is not saved. There are no delayed autosave writes.
 - Validate the saved version and all 73 text fields before loading. Invalid saved data remains untouched and autosave is paused until the user explicitly clears it.
 - Handle unavailable storage, failed writes, and invalid saved data explicitly; do not claim an edit was saved when persistence fails.
 - Provide a visible **Clear** button that opens a confirmation dialog before deleting any state.
-- The dialog explains that clearing deletes the locally saved board, and provides **Cancel** and **Clear saved state** actions. Initially focus Cancel; Escape cancels. Suspend board keyboard shortcuts while the dialog is open.
+- The dialog explains that clearing deletes the locally saved board and resets the color scheme, and provides **Cancel** and **Clear saved state** actions. Initially focus Cancel; Escape cancels. Suspend board keyboard shortcuts while the dialog is open.
 - Canceling preserves content and the previous interaction state, then restores focus to the invoking control.
 - Confirming removes this app's saved state, resets the in-memory board to its initial default, and returns focus to the empty main goal with no highlight or active editor.
 - Cancel pending autosaves and input timers during a confirmed reset so stale content cannot be written back. Delete only this app's storage keys, rather than clearing all storage for the origin.

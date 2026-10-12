@@ -11,6 +11,8 @@ import type { LoadResult } from './storage';
 import { Button } from './components/ui/button';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from './components/ui/alert-dialog';
 import { CellEditor } from './components/CellEditor';
+import { ThemePicker } from './components/ThemePicker';
+import { DEFAULT_APPEARANCE, appearancePreference, resolveTheme, themeVariables } from './themes';
 
 function initialSaved(): LoadResult {
   try { return loadState(window.localStorage); }
@@ -19,6 +21,9 @@ function initialSaved(): LoadResult {
 export default function App() {
   const [loaded] = useState(initialSaved);
   const [board, setBoard] = useState<BoardDocument>(loaded.state.board);
+  const [themeId, setThemeId] = useState(() => appearancePreference(loaded.state.theme));
+  const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const selectedTheme = resolveTheme(themeId, systemDark);
   const [interaction, dispatch] = useReducer(interactionReducer, initialInteraction);
   const [storageError, setStorageError] = useState<string | null>(loaded.error);
   const writable = useRef(loaded.writable);
@@ -42,10 +47,29 @@ export default function App() {
     });
   }, [input]);
   // Save synchronously per edit: no delayed save can resurrect a cleared document.
-  function persist(nextBoard: BoardDocument) {
+  function persist(nextBoard: BoardDocument, nextTheme = themeId) {
     if (!writable.current) return;
-    try { saveState(window.localStorage, nextBoard); setStorageError(null); }
+    try { saveState(window.localStorage, nextBoard, nextTheme); setStorageError(null); }
     catch { setStorageError('Your latest changes could not be saved locally. Keep this tab open and retry saving.'); }
+  }
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    for (const [name, value] of Object.entries(themeVariables(selectedTheme))) root.style.setProperty(name, value);
+    root.style.colorScheme = selectedTheme.mode;
+    root.dataset.theme = selectedTheme.id;
+  }, [selectedTheme]);
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    const update = () => setSystemDark(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  function changeTheme(id: string) {
+    const next = appearancePreference(id);
+    setThemeId(next);
+    persist(board, next);
+    if (stateRef.current.editor) requestAnimationFrame(() => textareaRef.current?.focus({ preventScroll: true }));
   }
   function edit(value: string) {
     const target = stateRef.current.editor;
@@ -144,7 +168,7 @@ export default function App() {
   function confirmClear() {
     try { clearState(window.localStorage); }
     catch { setClearError('Saved state could not be deleted. Please check your browser storage settings and try again.'); return; }
-    input.reset(); writable.current = true; setStorageError(null); setBoard(emptyBoard()); dispatch({ type: 'reset' }); resetFocus.current = true; setDialogOpen(false);
+    input.reset(); writable.current = true; setStorageError(null); setBoard(emptyBoard()); setThemeId(DEFAULT_APPEARANCE); dispatch({ type: 'reset' }); resetFocus.current = true; setDialogOpen(false);
   }
 
   return <div className="app-shell" onKeyDown={handleKey}>
@@ -153,13 +177,14 @@ export default function App() {
         <div className="workspace-toolbar">
           <a className="brand" href="#" onClick={e => { e.preventDefault(); send({ type: 'home' }); }}>mandalart<span className="brand-dot">.</span></a>
           <div className="toolbar-actions">
+            <ThemePicker value={themeId} onChange={changeTheme} editing={editor !== null}/>
             <span className={`save-status ${storageError ? 'save-error' : ''}`}><span className="status-dot"/>{storageError ? 'Save needs attention' : 'Saved locally'}</span>
             <AlertDialog open={dialogOpen} onOpenChange={open => { input.reset(); setClearError(null); setDialogOpen(open); }}>
               <AlertDialogTrigger asChild><Button variant="ghost" className="clear-button"><Trash2 size={15}/>Clear</Button></AlertDialogTrigger>
               <AlertDialogContent onOpenAutoFocus={e => { e.preventDefault(); cancelRef.current?.focus(); }} onCloseAutoFocus={e => { if (resetFocus.current) { e.preventDefault(); resetFocus.current = false; requestAnimationFrame(() => surfaceRef.current?.focus()); } }} onEscapeKeyDown={() => setDialogOpen(false)}>
                 <div className="dialog-icon"><Trash2 size={22}/></div>
                 <AlertDialogTitle className="dialog-title">Clear saved board?</AlertDialogTitle>
-                <AlertDialogDescription className="dialog-description">This will delete your locally saved board. All goals and actions will be cleared. This cannot be undone.</AlertDialogDescription>
+                <AlertDialogDescription className="dialog-description">This will delete your locally saved board and reset the color scheme. All goals and actions will be cleared. This cannot be undone.</AlertDialogDescription>
                 {clearError && <p className="clear-error" role="alert">{clearError}</p>}
                 <div className="dialog-actions"><AlertDialogCancel asChild><Button ref={cancelRef} variant="outline">Cancel</Button></AlertDialogCancel><Button variant="destructive" onClick={confirmClear}>Clear saved state</Button></div>
               </AlertDialogContent>

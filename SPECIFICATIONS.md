@@ -113,6 +113,7 @@ Switching variants preserves text, navigation context, highlight, and any active
 - Fit the complete board and essential controls within the desktop browser viewport, including laptop screens, without page scrolling. Size grid rows from available viewport height; long text scrolls within its cell/editor.
 - Keep the interface limited to the board, layout and Clear controls, save status, and compact keyboard/mode guidance. Omit decorative headings, slogans, progress counters, and subtree breadcrumbs.
 - Cells show their content or an empty-cell placeholder, without decorative captions or visible compass-direction labels. Retain descriptive accessibility labels.
+- Input uses the same font, weight, line height, wrapping width, and horizontal/vertical centering as the finished text. Preserve the main goal's heavier weight in its editor. Long input scrolls inside the available cell space.
 - Use distinct colors for highlight, focus, and input modes, as requested in the README.
 - Supplement color with structural cues: a tinted highlight, a strong focus outline, and a recognizable text field with a caret.
 - Make the active navigation context clear even when a different cell is highlighted.

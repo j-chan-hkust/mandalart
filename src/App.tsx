@@ -11,6 +11,7 @@ import type { LoadResult } from './storage';
 import { Button } from './components/ui/button';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from './components/ui/alert-dialog';
 import { ToggleGroup, ToggleGroupItem } from './components/ui/toggle-group';
+import { CellEditor } from './components/CellEditor';
 
 function initialSaved(): LoadResult {
   try { return loadState(window.localStorage); }
@@ -182,7 +183,7 @@ export default function App() {
         <div className="board-padding">
           <div ref={surfaceRef} tabIndex={0} role="group" aria-label={`Mandalart board. ${editor ? `Editing ${targetLabel(editor)}` : `Focused on ${interaction.context ? `${directionNames[interaction.context]} subgoal` : 'main goal'}`}. Use arrow keys to highlight, Enter to select or edit, and Escape to go back.`} className={`board ${enlarged ? 'board-enlarged' : ''}`} data-active-block={interaction.context || ''} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) input.reset(); }}>
             {positions.map(block)}
-            {editor && <textarea ref={textareaRef} className="cell-editor" style={editorStyle} aria-label={`Input ${targetLabel(editor)}`} value={readText(board, editor)} onChange={event => edit(event.target.value)} spellCheck placeholder="Write your idea…"/>}
+            {editor && <CellEditor textareaRef={textareaRef} style={editorStyle} label={`Input ${targetLabel(editor)}`} value={readText(board, editor)} onChange={edit} mainGoal={editor.kind === 'main'}/>}
           </div>
         </div>
         <footer className="workspace-footer">

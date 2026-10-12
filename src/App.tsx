@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { ArrowLeft, ArrowUpRight, Command, Grid3X3, Maximize2, Trash2 } from 'lucide-react';
+import { ArrowUpRight, Command, Trash2 } from 'lucide-react';
 import { positions, directionNames, emptyBoard, readText, targetId, targetLabel, writeText } from './model';
-import type { BoardDocument, Direction, Layout, Target } from './model';
+import type { BoardDocument, Direction, Target } from './model';
 import { focusedTarget, highlightedTarget, initialInteraction, interactionReducer } from './interaction';
 import type { InteractionEvent } from './interaction';
 import { arrowKeys, DirectionInput } from './direction-input';
@@ -10,17 +10,15 @@ import { clearState, loadState, saveState } from './storage';
 import type { LoadResult } from './storage';
 import { Button } from './components/ui/button';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from './components/ui/alert-dialog';
-import { ToggleGroup, ToggleGroupItem } from './components/ui/toggle-group';
 import { CellEditor } from './components/CellEditor';
 
 function initialSaved(): LoadResult {
   try { return loadState(window.localStorage); }
-  catch { return { state: { version: 1, board: emptyBoard(), layout: 'full' }, error: 'Browser storage is unavailable. Your edits cannot be saved.', writable: false }; }
+  catch { return { state: { version: 1, board: emptyBoard() }, error: 'Browser storage is unavailable. Your edits cannot be saved.', writable: false }; }
 }
 export default function App() {
   const [loaded] = useState(initialSaved);
   const [board, setBoard] = useState<BoardDocument>(loaded.state.board);
-  const [layout, setLayout] = useState<Layout>(loaded.state.layout);
   const [interaction, dispatch] = useReducer(interactionReducer, initialInteraction);
   const [storageError, setStorageError] = useState<string | null>(loaded.error);
   const writable = useRef(loaded.writable);
@@ -44,22 +42,16 @@ export default function App() {
     });
   }, [input]);
   // Save synchronously per edit: no delayed save can resurrect a cleared document.
-  function persist(nextBoard: BoardDocument, nextLayout: Layout) {
+  function persist(nextBoard: BoardDocument) {
     if (!writable.current) return;
-    try { saveState(window.localStorage, nextBoard, nextLayout); setStorageError(null); }
+    try { saveState(window.localStorage, nextBoard); setStorageError(null); }
     catch { setStorageError('Your latest changes could not be saved locally. Keep this tab open and retry saving.'); }
   }
   function edit(value: string) {
     const target = stateRef.current.editor;
     if (!target) return;
     const next = writeText(board, target, value);
-    setBoard(next); persist(next, layout);
-  }
-  function changeLayout(value: string) {
-    if (value !== 'full' && value !== 'focused') return;
-    setLayout(value); persist(board, value);
-    // The same textarea stays mounted. Mouse layout switches restore its selection.
-    if (stateRef.current.editor) requestAnimationFrame(() => textareaRef.current?.focus({ preventScroll: true }));
+    setBoard(next); persist(next);
   }
   function handleKey(event: ReactKeyboardEvent) {
     if (dialogOpen || event.nativeEvent.isComposing || event.keyCode === 229) return;
@@ -84,7 +76,7 @@ export default function App() {
       const next = writeText(board, textTarget, value);
       initialCaret.current = value.length;
       setBoard(next);
-      persist(next, layout);
+      persist(next);
       send({ type: 'edit', target: textTarget });
     }
   }
@@ -98,7 +90,6 @@ export default function App() {
   }, [input]);
   const editor = interaction.editor;
   const editorId = editor ? targetId(editor) : null;
-  const enlarged = layout === 'focused' && interaction.context !== null;
   useLayoutEffect(() => {
     if (!editorId) return;
     const position = () => {
@@ -113,7 +104,7 @@ export default function App() {
     if (surfaceRef.current) observer.observe(surfaceRef.current);
     window.addEventListener('resize', position);
     return () => { observer.disconnect(); window.removeEventListener('resize', position); };
-  }, [editorId, layout, interaction.context]);
+  }, [editorId, interaction.context]);
   useLayoutEffect(() => {
     if (editorId) {
       textareaRef.current?.focus({ preventScroll: true });
@@ -153,7 +144,7 @@ export default function App() {
   function confirmClear() {
     try { clearState(window.localStorage); }
     catch { setClearError('Saved state could not be deleted. Please check your browser storage settings and try again.'); return; }
-    input.reset(); writable.current = true; setStorageError(null); setBoard(emptyBoard()); setLayout('full'); dispatch({ type: 'reset' }); resetFocus.current = true; setDialogOpen(false);
+    input.reset(); writable.current = true; setStorageError(null); setBoard(emptyBoard()); dispatch({ type: 'reset' }); resetFocus.current = true; setDialogOpen(false);
   }
 
   return <div className="app-shell" onKeyDown={handleKey}>
@@ -163,25 +154,21 @@ export default function App() {
           <a className="brand" href="#" onClick={e => { e.preventDefault(); send({ type: 'home' }); }}>mandalart<span className="brand-dot">.</span></a>
           <div className="toolbar-actions">
             <span className={`save-status ${storageError ? 'save-error' : ''}`}><span className="status-dot"/>{storageError ? 'Save needs attention' : 'Saved locally'}</span>
-            {interaction.context && <Button variant="ghost" onClick={() => send({ type: 'home' })}><ArrowLeft size={15}/>Main goal</Button>}
-            <ToggleGroup type="single" value={layout} onValueChange={changeLayout} aria-label="Board layout" onMouseDown={e => { if (editor) e.preventDefault(); }}>
-              <ToggleGroupItem value="full" aria-label="Full board"><Grid3X3 size={14}/>Full board</ToggleGroupItem><ToggleGroupItem value="focused" aria-label="Focused block"><Maximize2 size={14}/>Focused block</ToggleGroupItem>
-            </ToggleGroup>
             <AlertDialog open={dialogOpen} onOpenChange={open => { input.reset(); setClearError(null); setDialogOpen(open); }}>
               <AlertDialogTrigger asChild><Button variant="ghost" className="clear-button"><Trash2 size={15}/>Clear</Button></AlertDialogTrigger>
               <AlertDialogContent onOpenAutoFocus={e => { e.preventDefault(); cancelRef.current?.focus(); }} onCloseAutoFocus={e => { if (resetFocus.current) { e.preventDefault(); resetFocus.current = false; requestAnimationFrame(() => surfaceRef.current?.focus()); } }} onEscapeKeyDown={() => setDialogOpen(false)}>
                 <div className="dialog-icon"><Trash2 size={22}/></div>
                 <AlertDialogTitle className="dialog-title">Clear saved board?</AlertDialogTitle>
-                <AlertDialogDescription className="dialog-description">This will delete your locally saved board and layout preference. All goals and actions will be cleared. This cannot be undone.</AlertDialogDescription>
+                <AlertDialogDescription className="dialog-description">This will delete your locally saved board. All goals and actions will be cleared. This cannot be undone.</AlertDialogDescription>
                 {clearError && <p className="clear-error" role="alert">{clearError}</p>}
                 <div className="dialog-actions"><AlertDialogCancel asChild><Button ref={cancelRef} variant="outline">Cancel</Button></AlertDialogCancel><Button variant="destructive" onClick={confirmClear}>Clear saved state</Button></div>
               </AlertDialogContent>
             </AlertDialog>
           </div>
         </div>
-        {storageError && <div className="storage-alert" role="alert">{storageError}{writable.current && <Button variant="outline" onClick={() => persist(board, layout)}>Retry saving</Button>}</div>}
+        {storageError && <div className="storage-alert" role="alert">{storageError}{writable.current && <Button variant="outline" onClick={() => persist(board)}>Retry saving</Button>}</div>}
         <div className="board-padding">
-          <div ref={surfaceRef} tabIndex={0} role="group" aria-label={`Mandalart board. ${editor ? `Editing ${targetLabel(editor)}` : `Focused on ${interaction.context ? `${directionNames[interaction.context]} subgoal` : 'main goal'}`}. Use arrow keys to highlight, Enter to select or edit, and Escape to go back.`} className={`board ${enlarged ? 'board-enlarged' : ''}`} data-active-block={interaction.context || ''} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) input.reset(); }}>
+          <div ref={surfaceRef} tabIndex={0} role="group" aria-label={`Mandalart board. ${editor ? `Editing ${targetLabel(editor)}` : `Focused on ${interaction.context ? `${directionNames[interaction.context]} subgoal` : 'main goal'}`}. Use arrow keys to highlight, Enter to select or edit, and Escape to go back.`} className="board" data-active-block={interaction.context || ''} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) input.reset(); }}>
             {positions.map(block)}
             {editor && <CellEditor textareaRef={textareaRef} style={editorStyle} label={`Input ${targetLabel(editor)}`} value={readText(board, editor)} onChange={edit} mainGoal={editor.kind === 'main'}/>}
           </div>

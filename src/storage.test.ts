@@ -6,12 +6,21 @@ function memoryStorage() {
   return { getItem: (key: string) => entries.get(key) ?? null, setItem: (key: string, value: string) => { entries.set(key, value); }, removeItem: (key: string) => { entries.delete(key); } };
 }
 describe('local persistence', () => {
-  it('restores content and layout and clears only its own key', () => {
+  it('restores content and clears only its own key', () => {
     const storage = memoryStorage(), board = { ...emptyBoard(), mainGoal: 'Learn\nsomething' };
-    storage.setItem('unrelated', 'keep'); saveState(storage, board, 'focused');
-    expect(loadState(storage).state).toEqual({ version: 1, board, layout: 'focused' });
+    storage.setItem('unrelated', 'keep'); saveState(storage, board);
+    expect(loadState(storage).state).toEqual({ version: 1, board });
     clearState(storage); expect(storage.getItem(STORAGE_KEY)).toBe(null); expect(storage.getItem('unrelated')).toBe('keep');
     expect(loadState(storage).state.board.mainGoal).toBe('');
+  });
+  it('loads former focused-layout saves without losing content and drops the obsolete preference on save', () => {
+    const storage = memoryStorage(), board = { ...emptyBoard(), mainGoal: 'Keep my plan' };
+    storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, board, layout: 'focused' }));
+    const loaded = loadState(storage);
+    expect(loaded.writable).toBe(true);
+    expect(loaded.state).toEqual({ version: 1, board });
+    saveState(storage, loaded.state.board);
+    expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toEqual({ version: 1, board });
   });
   it('preserves corrupt saved data and pauses autosave', () => {
     const storage = memoryStorage(); storage.setItem(STORAGE_KEY, '{bad');
@@ -26,7 +35,7 @@ describe('local persistence', () => {
   it('surfaces storage failures', () => {
     const storage = { getItem: () => { throw new Error('Unavailable'); } };
     expect(loadState(storage).error).toBeTruthy();
-    expect(() => saveState({ setItem: () => { throw new Error('Full'); } }, emptyBoard(), 'full')).toThrow();
+    expect(() => saveState({ setItem: () => { throw new Error('Full'); } }, emptyBoard())).toThrow();
     expect(() => clearState({ removeItem: () => { throw new Error('Blocked'); } })).toThrow();
   });
 });

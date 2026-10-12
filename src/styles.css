@@ -45,9 +45,6 @@ main { height: 100%; min-height: 0; }
 .button-destructive { background: #b4594c; }
 .button-destructive:hover { background: #9f493c; }
 .clear-button { border-left: 1px solid #e8ebe2; border-radius: 0; padding-left: 15px; }
-.toggle-group { display: flex; padding: 3px; border: 1px solid #e7eade; background: #f5f6f1; border-radius: 8px; gap: 2px; }
-.toggle-item { display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; padding: 5px 10px; background: transparent; border-radius: 5px; color: #7d8875; font-size: 11px; font-weight: 500; white-space: nowrap; }
-.toggle-item[data-state=on] { background: #fff; color: #4f6245; box-shadow: 0 1px 4px #3b4f2420; }
 
 .board-padding { flex: 1; min-height: 0; min-width: 0; padding: 12px; }
 .board { position: relative; height: 100%; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 10px; outline: none; }
@@ -73,12 +70,6 @@ main { height: 100%; min-height: 0; }
 .main-editor { font-weight: 700; }
 .cell-editor { display: block; width: 100%; min-height: 0; resize: none; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; outline: none; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere; }
 .cell-editor::placeholder { color: #acabc2; }
-.board-enlarged { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
-.board-enlarged .block { display: none; }
-.board-enlarged[data-active-block=NW] [data-block=NW], .board-enlarged[data-active-block=N] [data-block=N], .board-enlarged[data-active-block=NE] [data-block=NE], .board-enlarged[data-active-block=W] [data-block=W], .board-enlarged[data-active-block=E] [data-block=E], .board-enlarged[data-active-block=SW] [data-block=SW], .board-enlarged[data-active-block=S] [data-block=S], .board-enlarged[data-active-block=SE] [data-block=SE] { display: grid; }
-.board-enlarged .cell-text, .board-enlarged .cell-editor-frame { font-size: 20px; padding: 18px; }
-.board-enlarged .cell-placeholder { font-size: 15px; }
-.board-enlarged .open-block { right: 10px; bottom: 10px; }
 
 .workspace-footer { flex: 0 0 36px; border-top: 1px solid #edf0e8; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .mode-indicator { display: flex; align-items: center; gap: 7px; color: #6e7c62; font-size: 11px; }

@@ -6,7 +6,7 @@ Build a Mandalart planning app whose primary design priority is a precise, forgi
 
 **Platform scope (confirmed):** this is a desktop, keyboard-centric app. Phone layouts, mobile-specific interactions, and mobile usability validation are out of scope. Mouse interaction supplements the keyboard workflow.
 
-This document captures the README and subsequent planning discussion. Both layout variants, direct entry into action input mode, browser-local persistence, and clearing saved state with confirmation are agreed requirements. Technical choices and unspecified behaviors below are working proposals; the open questions section identifies decisions still to confirm.
+This document captures the README and subsequent planning discussion. The full board layout, direct entry into action input mode, browser-local persistence, and clearing saved state with confirmation are agreed requirements. Technical choices and unspecified behaviors below are working proposals where indicated.
 
 Reference: [Mandalart planner](https://www.ourmindfullife.com/mandalart-planner/).
 
@@ -88,30 +88,17 @@ Implementation requirements:
 
 Research background: [Godot's input API](https://docs.godotengine.org/en/4.6/classes/class_input.html) combines directional actions into a vector; [Programming Responsiveness](https://www.gamedeveloper.com/programming/programming-responsiveness) discusses timing tolerance in game input. The behavior and timing above are app-specific proposals informed by these ideas.
 
-## Layout variants
+## Full board layout
 
-Build both variants and provide a visible toggle for comparison. Both use the same document data, navigation state, and keyboard interpreter.
-
-### Full board
-
-- Keep all 81 cells in place.
+- Keep all 81 cells in place while navigating and editing.
 - Clearly outline the active subgoal's outer 3×3 block when navigating or editing within it.
 - Use the shared highlight, focus, and input styling to indicate the current interaction.
-
-### Focused block
-
-- Start with the full board while the main goal is focused.
-- Focusing a subgoal enlarges its corresponding outer 3×3 block into the main view.
-- Keep the enlarged block visible while editing its subgoal title or actions.
-- Returning focus to the main goal restores the full board.
-- Escape from action input first returns to the parent subgoal within the enlarged block; the next Escape restores the full board.
-
-Switching variants preserves text, navigation context, highlight, and any active editing session. Layout changes must not reset the editor or lose its caret/selection.
+- Enlarging a subgoal into a separate view and the associated layout toggle are removed from scope.
 
 ## Visual and accessibility requirements
 
 - Fit the complete board and essential controls within the desktop browser viewport, including laptop screens, without page scrolling. Size grid rows from available viewport height; long text scrolls within its cell/editor.
-- Keep the interface limited to the board, layout and Clear controls, save status, and compact keyboard/mode guidance. Omit decorative headings, slogans, progress counters, and subtree breadcrumbs.
+- Keep the interface limited to the board, Clear and navigation controls, save status, and compact keyboard/mode guidance. Omit decorative headings, slogans, progress counters, and subtree breadcrumbs.
 - Cells show their content or an empty-cell placeholder, without decorative captions or visible compass-direction labels. Retain descriptive accessibility labels.
 - Input uses the same font, weight, line height, wrapping width, and horizontal/vertical centering as the finished text. Preserve the main goal's heavier weight in its editor. Long input scrolls inside the available cell space.
 - Use distinct colors for highlight, focus, and input modes, as requested in the README.
@@ -126,7 +113,7 @@ Switching variants preserves text, navigation context, highlight, and any active
 
 - Clicking any text cell immediately opens its editor, including either representation of a subgoal title. No preliminary focus-only click is required.
 - Opening an action editor sets its parent subgoal as the navigation context. Leaving input follows the same transitions as keyboard editing.
-- Provide a separate, clearly labeled control for each subgoal to focus/open its action block without editing the title. In Full board mode this activates the block in place; in Focused block mode it enlarges the block into the main view.
+- Provide a separate, clearly labeled control for each subgoal to focus its action block in place without editing the title.
 - Activating that control must not also open the title editor. It must be usable with mouse and keyboard.
 - Switching to another cell preserves edits to the previous cell and opens the new editor immediately.
 
@@ -134,14 +121,14 @@ Switching variants preserves text, navigation context, highlight, and any active
 
 ### Stack and tooling (confirmed)
 
-- **React:** render the board, editors, and both layout variants from shared application state.
+- **React:** render the board and editors from shared application state.
 - **TypeScript:** define document types, interaction states, and keyboard events explicitly.
 - **Vite:** provide the development server and production build for a browser application.
 - **CSS Grid:** implement the board and its 3×3 blocks with custom styling.
-- **shadcn/ui:** provide supporting controls such as the layout toggle and Clear confirmation dialog.
+- **shadcn/ui:** provide supporting controls such as the Clear confirmation dialog.
 - **Browser-local persistence:** keep the single board on the user's browser; the initial app requires no application backend.
 
-Vitest covers the input interpreter, interaction state machine, and storage adapter. Browser verification covers real keyboard events, focus, layout switching with caret preservation, and the Clear dialog.
+Vitest covers the input interpreter, interaction state machine, and storage adapter. Browser verification covers real keyboard events, focus, stable text alignment and caret behavior, and the Clear dialog.
 
 ### Architecture and data model
 
@@ -150,7 +137,7 @@ Separate the implementation into:
 1. **Document model:** main goal, subgoals, and actions, with each subgoal title stored once.
 2. **Input interpreter:** held keys, timing tolerance, and directional selection.
 3. **Interaction state machine:** focus, highlight, input target, and explicit Enter/Escape transitions.
-4. **Views:** full board and focused block, rendering shared state.
+4. **View:** a stationary full board rendering shared state.
 5. **Persistence adapter:** loading and saving document content independently of transient interaction state.
 
 Suggested document shape:
@@ -168,7 +155,7 @@ interface BoardDocument {
 }
 ```
 
-Represent input targets explicitly as the main goal, a subgoal direction, or a subgoal/action direction pair. Avoid storing duplicate text in view state. Keep layout choice independent of the interaction state machine.
+Represent input targets explicitly as the main goal, a subgoal direction, or a subgoal/action direction pair. Avoid storing duplicate text in view state.
 
 **Initial scope (confirmed):** support exactly one locally saved board. Multiple boards and JSON import/export are out of scope. A JSON export button and a print-to-PNG button are possible future additions, not part of the initial implementation.
 
@@ -176,14 +163,14 @@ Represent input targets explicitly as the main goal, a subgoal direction, or a s
 
 - Store exactly one board locally in the browser and automatically save edits, including text entered before leaving input mode.
 - Restore saved content after refresh or reopening the app. Start navigation at the main goal as specified above; held keys, input timers, and active editors are transient.
-- Use `localStorage` with versioned, app-specific keys as the proposed storage implementation. Persist the layout preference alongside board content.
-- Implementation: save synchronously on each content or preference change using `mandalart.state.v1`. Its JSON payload contains `{ version: 1, board, layout }`. Transient navigation state is not saved. There are no delayed autosave writes.
-- Validate the saved version, all 73 text fields, and the layout before loading. Invalid saved data remains untouched and autosave is paused until the user explicitly clears it.
+- Use `localStorage` with versioned, app-specific keys as the proposed storage implementation.
+- Implementation: save synchronously on each content change using `mandalart.state.v1`. Its JSON payload contains `{ version: 1, board }`. Transient navigation state is not saved. There are no delayed autosave writes.
+- Validate the saved version and all 73 text fields before loading. Invalid saved data remains untouched and autosave is paused until the user explicitly clears it.
 - Handle unavailable storage, failed writes, and invalid saved data explicitly; do not claim an edit was saved when persistence fails.
 - Provide a visible **Clear** button that opens a confirmation dialog before deleting any state.
-- The dialog explains that clearing deletes the locally saved board and app preferences, and provides **Cancel** and **Clear saved state** actions. Initially focus Cancel; Escape cancels. Suspend board keyboard shortcuts while the dialog is open.
-- Canceling preserves content, preferences, and the previous interaction state, then restores focus to the invoking control.
-- Confirming removes this app's saved state, resets the in-memory board and preferences to their initial defaults, and returns focus to the empty main goal with no highlight or active editor.
+- The dialog explains that clearing deletes the locally saved board, and provides **Cancel** and **Clear saved state** actions. Initially focus Cancel; Escape cancels. Suspend board keyboard shortcuts while the dialog is open.
+- Canceling preserves content and the previous interaction state, then restores focus to the invoking control.
+- Confirming removes this app's saved state, resets the in-memory board to its initial default, and returns focus to the empty main goal with no highlight or active editor.
 - Cancel pending autosaves and input timers during a confirmed reset so stale content cannot be written back. Delete only this app's storage keys, rather than clearing all storage for the origin.
 - If deletion fails, show the failure instead of claiming saved state was cleared.
 
@@ -192,7 +179,7 @@ Represent input targets explicitly as the main goal, a subgoal direction, or a s
 1. Confirm remaining input decisions.
 2. Build a minimal board and explicit interaction state machine, including direct action input.
 3. Implement and tune directional input using recorded press/release sequences and hands-on use.
-4. Build both layout variants with shared state and a toggle.
+4. Render the full board with stationary blocks and shared editing state.
 5. Add browser-local autosave for the single board, the Clear confirmation flow, accessibility details, and visual polish.
 
 ## Acceptance scenarios
@@ -213,16 +200,13 @@ Represent input targets explicitly as the main goal, a subgoal direction, or a s
 - Arrow keys work normally inside the editor.
 - Clicking any text cell opens input immediately; the separate subgoal control opens its action block without editing its title.
 - Enter inserts a newline in every editor. Command+Enter on macOS or Ctrl+Enter on Windows/Linux keeps the text and performs the same transition as Escape without adding a newline.
-- Both layouts implement identical keyboard transitions.
-- Switching layouts preserves text, navigation state, and active editing state.
-- Refreshing or reopening restores saved board content and layout preference, including edits made before exiting input mode.
+- All 81 cells remain visible while navigating and editing a subgoal or action.
+- Refreshing or reopening restores saved board content, including edits made before exiting input mode.
 - Clicking Clear opens confirmation without deleting anything; Cancel or Escape preserves state.
-- Confirming Clear removes saved board content and preferences and returns to an empty board focused on the main goal.
+- Confirming Clear removes saved board content and returns to an empty board focused on the main goal.
 - Refreshing after Clear does not restore deleted content, and pending autosaves cannot resurrect it.
 - Clearing app state leaves unrelated browser storage untouched.
 
-## Open decisions
+## Compatibility
 
-- Choose the default layout after trying both variants.
-
-The initial implementation starts in Full board mode and remembers the user's layout selection. The final default can be revisited after comparing both variants.
+Existing saves that include a former layout preference continue to load their board content. Ignore that obsolete field and omit it on the next save.

@@ -36,7 +36,7 @@ Open the local URL printed by Vite. This is a desktop, keyboard-centric app with
 - Escape from a subgoal returns to the main goal. Tab follows normal browser focus navigation.
 - Click any cell to edit it immediately. The small arrow on each subgoal opens its action block without editing its title.
 
-Compare Full board and Focused block using the toolbar toggle. Clear deletes the board and layout preference after confirmation. JSON export and PNG output are outside the current scope.
+The full board stays visible while navigating and editing. Clear deletes the saved board after confirmation. JSON export and PNG output are outside the current scope.
 
 ## Validation
 

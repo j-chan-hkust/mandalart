@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { ArrowLeft, ArrowUpRight, Command, Grid3X3, Maximize2, Sprout, Trash2 } from 'lucide-react';
-import { directions, positions, directionNames, emptyBoard, readText, targetId, targetLabel, writeText } from './model';
+import { ArrowLeft, ArrowUpRight, Command, Grid3X3, Maximize2, Trash2 } from 'lucide-react';
+import { positions, directionNames, emptyBoard, readText, targetId, targetLabel, writeText } from './model';
 import type { BoardDocument, Direction, Layout, Target } from './model';
 import { focusedTarget, highlightedTarget, initialInteraction, interactionReducer } from './interaction';
 import type { InteractionEvent } from './interaction';
@@ -106,13 +106,10 @@ export default function App() {
   useLayoutEffect(() => {
     if (editorId) textareaRef.current?.focus({ preventScroll: true });
     else surfaceRef.current?.focus({ preventScroll: true });
-  }, [editorId]);
+  }, [editorId, interaction.context]);
   const focusId = targetId(focusedTarget(interaction));
   const highlighted = highlightedTarget(interaction);
   const highlightId = highlighted ? targetId(highlighted) : null;
-  const count = [board.mainGoal, ...directions.flatMap(d => [board.subgoals[d].title, ...directions.map(a => board.subgoals[d].actions[a])])].filter(text => text.trim()).length;
-  const contextTitle = interaction.context ? board.subgoals[interaction.context].title || `${directionNames[interaction.context]} subgoal` : board.mainGoal || 'Your main goal';
-  const progress = count / 73 * 100;
 
   function cell(target: Target, central: boolean, index: number) {
     const id = targetId(target), text = readText(board, target);
@@ -145,17 +142,12 @@ export default function App() {
   }
 
   return <div className="app-shell" onKeyDown={handleKey}>
-    <header className="topbar">
-      <a className="brand" href="#" onClick={e => { e.preventDefault(); send({ type: 'home' }); }}><span className="brand-mark"><Grid3X3 size={22}/></span><span>mandalart<span className="brand-dot">.</span></span></a>
-      <span className="header-note">A little structure. A lot of possibility.</span>
-      <span className={`save-status ${storageError ? 'save-error' : ''}`}><span className="status-dot"/>{storageError ? 'Save needs attention' : 'Saved in this browser'}</span>
-    </header>
     <main>
-      <section className="intro"><div><p className="eyebrow">YOUR SPACE TO MAKE THINGS HAPPEN</p><h1>Big ideas, <span>small steps.</span></h1><p className="intro-description">One goal. Eight directions. A clearer way forward.</p></div><div className="progress"><div><span>{count}<span className="progress-total"> / 73</span></span><span className="progress-label">ideas planted</span></div><div className="progress-track"><span style={{ width: `${progress}%` }}/></div></div></section>
       <section className="workspace">
         <div className="workspace-toolbar">
-          <div className="context"><Sprout size={18}/><span>{interaction.context ? 'Subgoal' : 'Main goal'}</span><span className="context-divider">/</span><strong title={contextTitle}>{contextTitle}</strong></div>
+          <a className="brand" href="#" onClick={e => { e.preventDefault(); send({ type: 'home' }); }}>mandalart<span className="brand-dot">.</span></a>
           <div className="toolbar-actions">
+            <span className={`save-status ${storageError ? 'save-error' : ''}`}><span className="status-dot"/>{storageError ? 'Save needs attention' : 'Saved locally'}</span>
             {interaction.context && <Button variant="ghost" onClick={() => send({ type: 'home' })}><ArrowLeft size={15}/>Main goal</Button>}
             <ToggleGroup type="single" value={layout} onValueChange={changeLayout} aria-label="Board layout" onMouseDown={e => { if (editor) e.preventDefault(); }}>
               <ToggleGroupItem value="full" aria-label="Full board"><Grid3X3 size={14}/>Full board</ToggleGroupItem><ToggleGroupItem value="focused" aria-label="Focused block"><Maximize2 size={14}/>Focused block</ToggleGroupItem>
@@ -164,7 +156,7 @@ export default function App() {
               <AlertDialogTrigger asChild><Button variant="ghost" className="clear-button"><Trash2 size={15}/>Clear</Button></AlertDialogTrigger>
               <AlertDialogContent onOpenAutoFocus={e => { e.preventDefault(); cancelRef.current?.focus(); }} onCloseAutoFocus={e => { if (resetFocus.current) { e.preventDefault(); resetFocus.current = false; requestAnimationFrame(() => surfaceRef.current?.focus()); } }} onEscapeKeyDown={() => setDialogOpen(false)}>
                 <div className="dialog-icon"><Trash2 size={22}/></div>
-                <AlertDialogTitle className="dialog-title">Make room for a fresh start?</AlertDialogTitle>
+                <AlertDialogTitle className="dialog-title">Clear saved board?</AlertDialogTitle>
                 <AlertDialogDescription className="dialog-description">This will delete your locally saved board and layout preference. All goals and actions will be cleared. This cannot be undone.</AlertDialogDescription>
                 {clearError && <p className="clear-error" role="alert">{clearError}</p>}
                 <div className="dialog-actions"><AlertDialogCancel asChild><Button ref={cancelRef} variant="outline">Cancel</Button></AlertDialogCancel><Button variant="destructive" onClick={confirmClear}>Clear saved state</Button></div>
@@ -179,10 +171,12 @@ export default function App() {
             {editor && <textarea ref={textareaRef} className="cell-editor" style={editorStyle} aria-label={`Input ${targetLabel(editor)}`} value={readText(board, editor)} onChange={event => edit(event.target.value)} spellCheck placeholder="Write your idea…"/>}
           </div>
         </div>
-        <footer className="workspace-footer"><div className="mode-indicator" aria-live="polite"><span className={`mode-dot ${editor ? 'input-dot' : 'focus-dot'}`}/>{editor ? 'Input mode' : 'Focus mode'}<span className="footer-separator">·</span><span>{editor ? 'Let your ideas take shape.' : interaction.context ? 'Choose an action around this subgoal.' : 'Start at the center. Explore in any direction.'}</span></div><div className="legend"><span><i className="legend-highlight"/>Highlight</span><span><i className="legend-focus"/>Focus</span><span><i className="legend-input"/>Input</span></div></footer>
+        <footer className="workspace-footer">
+          <div className="mode-indicator" aria-live="polite"><span className={`mode-dot ${editor ? 'input-dot' : 'focus-dot'}`}/>{editor ? 'Input' : 'Focus'}</div>
+          <div className="keyboard-guide">{editor ? <><span><kbd>Enter</kbd> New line</span><span><kbd><Command size={11}/>/ Ctrl</kbd><kbd>Enter</kbd> Finish</span><span><kbd>Esc</kbd> Finish</span></> : <><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> Direction</span><span><kbd>Enter</kbd> Select / edit</span><span><kbd>Esc</kbd> Back</span><span>Two arrows for diagonals</span></>}</div>
+          <div className="legend"><span><i className="legend-highlight"/>Highlight</span><span><i className="legend-focus"/>Focus</span><span><i className="legend-input"/>Input</span></div>
+        </footer>
       </section>
-      <div className="keyboard-guide">{editor ? <><span><kbd>Enter</kbd> New line</span><span><kbd><Command size={11}/>/ Ctrl</kbd><kbd>Enter</kbd> Finish editing</span><span><kbd>Esc</kbd> Finish editing</span></> : <><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> Highlight a direction</span><span><kbd>Enter</kbd> Select / edit</span><span><kbd>Esc</kbd> Go back</span></>}<span className="guide-note">{editor ? 'Changes save as you type' : 'Hold two arrows for diagonals'}</span></div>
     </main>
-    <footer className="page-footer"><span>Small steps add up.</span><span>Just you and your next idea.</span></footer>
   </div>;
 }

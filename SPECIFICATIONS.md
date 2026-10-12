@@ -41,17 +41,17 @@ On initial load, focus the main goal with no child highlighted and no editor ope
 | Main goal focused, subgoal highlighted | Change highlighted subgoal | Focus that subgoal and clear the highlight | Clear the highlight |
 | Subgoal focused, no highlight | Highlight an action | Open subgoal input | Return focus to the main goal |
 | Subgoal focused, action highlighted | Change highlighted action | Open that action's input immediately | Return focus to the main goal |
-| Main goal input | Normal text cursor movement | Insert a newline | Keep text and focus the main goal with no highlight |
-| Subgoal input | Normal text cursor movement | Insert a newline | Keep text and focus the main goal with no highlight |
-| Action input | Normal text cursor movement | Insert a newline | Keep text and focus the parent subgoal with no highlight |
+| Main goal input | Normal text cursor movement | Finish editing and return to parent level | Keep text and focus the main goal with no highlight |
+| Subgoal input | Normal text cursor movement | Finish editing and return to parent level | Keep text and focus the main goal with no highlight |
+| Action input | Normal text cursor movement | Finish editing and return to parent level | Keep text and focus the parent subgoal with no highlight |
 
-Finishing input with Escape or Command/Ctrl+Enter moves to the edited cell's parent level and clears the highlight. Subgoal input returns to the main goal; action input returns to its parent subgoal; main-goal input returns to the main goal. This applies to typing, Enter, and mouse entry, including when switching between editors. Navigation has no dependence on the focus held before editing.
+Finishing input with Enter or Escape moves to the edited cell's parent level and clears the highlight. Subgoal input returns to the main goal; action input returns to its parent subgoal; main-goal input returns to the main goal. This applies to typing, Enter, and mouse entry, including when switching between editors. Navigation has no dependence on the focus held before editing.
 
-**Switching actions (confirmed):** finish editing with Escape or Command/Ctrl+Enter, use arrow keys from the parent subgoal to highlight another action, then press Enter to edit it. No additional action-switching shortcut is required. Tab and Shift+Tab retain their normal focus-navigation behavior.
+**Switching actions (confirmed):** finish editing with Enter or Escape, use arrow keys from the parent subgoal to highlight another action, then press Enter to edit it. No additional action-switching shortcut is required. Tab and Shift+Tab retain their normal focus-navigation behavior.
 
 Typing a printable character while the board has keyboard focus immediately opens input for the highlighted cell, if any, or the focused goal otherwise, and inserts that character. This includes highlighted subgoals and actions; no Enter is required first. Preserve existing text, append the first character, and place the caret after it. This includes letters, numbers, punctuation, and spaces; command/control/alt shortcuts do not start editing. Enter still selects the highlighted child. Escape exits input without discarding text. While editing, arrow keys belong to the text field, and navigation shortcuts must not interfere with text composition.
 
-**Confirmed input shortcuts:** Enter inserts a newline. Command+Enter on macOS and Ctrl+Enter on Windows/Linux finish editing with exactly the same transition as Escape, preserving the text without inserting a newline and moving to the edited cell's parent level with no highlight. Actions never gain a separate focused state. Finishing editing is not required for autosave.
+**Confirmed input shortcuts:** Enter and Escape finish editing, keep the text, move to the edited cell's parent level, and clear the highlight. Cells do not support manual newlines; text still wraps naturally to fit its cell. Pasted line breaks and line breaks from older saved boards become spaces. Enter used to confirm IME composition must not finish editing. Actions never gain a separate focused state. Finishing editing is not required for autosave.
 
 ### Directional selection (confirmed)
 
@@ -103,7 +103,7 @@ Research background: [Godot's input API](https://docs.godotengine.org/en/4.6/cla
 - Offer exactly two color schemes: Cloud for Light mode and Graphite for Dark mode. Provide a compact System/Light/Dark toolbar selector. System is the default and follows `prefers-color-scheme`, updating live when the user's OS/browser appearance changes. Light and Dark are saved manual overrides; choosing System resumes automatic behavior. Apply appearance to the entire interface, including editors, mode indicators, and confirmation dialogs.
 - Changing appearance preserves board content, navigation, and editor selection. Save the selected preference (`system`, `cloud`, or `graphite`) locally. Old saves without a preference follow the system. Clear resets to System along with board content. Retired light palettes map to Cloud and retired dark palettes map to Graphite without losing board content.
 - Input uses the same font, weight, line height, wrapping width, and horizontal/vertical centering as the finished text. Preserve the main goal's heavier weight in its editor. Long input scrolls inside the available cell space.
-- Measure editor height from fractional text line boxes rather than rounded scroll height. Preserve trailing blank lines in both editing and display so leaving input does not move the text.
+- Measure editor height from fractional text line boxes rather than rounded scroll height. Use the same natural wrapping in editing and display so leaving input does not move the text.
 - Use distinct colors for highlight, focus, and input modes, as requested in the README.
 - Supplement color with structural cues: a tinted highlight, a strong focus outline, and a recognizable text field with a caret.
 - Make the active navigation context clear even when a different cell is highlighted.
@@ -203,7 +203,7 @@ Represent input targets explicitly as the main goal, a subgoal direction, or a s
 - Leaving the window while keys are held does not produce stuck input on return.
 - Arrow keys work normally inside the editor.
 - Clicking any text cell opens input immediately; the separate subgoal control opens its action block without editing its title.
-- Enter inserts a newline in every editor. Command+Enter on macOS or Ctrl+Enter on Windows/Linux keeps the text and performs the same transition as Escape without adding a newline.
+- Enter and Escape finish every editor and return to the parent level with no highlight. Manual newlines are disabled; pasted and previously saved line breaks become spaces.
 - All 81 cells remain visible while navigating and editing a subgoal or action.
 - Refreshing or reopening restores saved board content, including edits made before exiting input mode.
 - Clicking Clear opens confirmation without deleting anything; Cancel or Escape preserves state.

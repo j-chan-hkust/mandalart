@@ -9,7 +9,7 @@ describe('local persistence', () => {
   it('restores content and clears only its own key', () => {
     const storage = memoryStorage(), board = { ...emptyBoard(), mainGoal: 'Learn\nsomething' };
     storage.setItem('unrelated', 'keep'); saveState(storage, board);
-    expect(loadState(storage).state).toEqual({ version: 1, board });
+    expect(loadState(storage).state).toEqual({ version: 1, board: { ...board, mainGoal: 'Learn something' } });
     clearState(storage); expect(storage.getItem(STORAGE_KEY)).toBe(null); expect(storage.getItem('unrelated')).toBe('keep');
     expect(loadState(storage).state.board.mainGoal).toBe('');
   });

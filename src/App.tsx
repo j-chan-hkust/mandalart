@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { ArrowUpRight, Command, Trash2 } from 'lucide-react';
+import { ArrowUpRight, Trash2 } from 'lucide-react';
 import { positions, directionNames, emptyBoard, readText, targetId, targetLabel, writeText } from './model';
 import type { BoardDocument, Direction, Target } from './model';
 import { focusedTarget, highlightedTarget, initialInteraction, interactionReducer } from './interaction';
@@ -82,7 +82,7 @@ export default function App() {
     const target = event.target as HTMLElement;
     const editing = target === textareaRef.current;
     if (editing) {
-      if (event.key === 'Escape' || (event.key === 'Enter' && (event.metaKey || event.ctrlKey))) {
+      if (event.key === 'Escape' || event.key === 'Enter') {
         event.preventDefault();
         if (!event.repeat) send({ type: 'escape' });
       }
@@ -200,7 +200,7 @@ export default function App() {
         </div>
         <footer className="workspace-footer">
           <div className="mode-indicator" aria-live="polite"><span className={`mode-dot ${editor ? 'input-dot' : 'focus-dot'}`}/>{editor ? 'Input' : 'Focus'}</div>
-          <div className="keyboard-guide">{editor ? <><span><kbd>Enter</kbd> New line</span><span><kbd><Command size={11}/>/ Ctrl</kbd><kbd>Enter</kbd> Finish</span><span><kbd>Esc</kbd> Finish</span></> : <><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> Direction</span><span><kbd>Enter</kbd> Select / edit</span><span>Type to edit</span><span><kbd>Esc</kbd> Back</span><span>Two arrows for diagonals</span></>}</div>
+          <div className="keyboard-guide">{editor ? <><span><kbd>Enter</kbd> Finish</span><span><kbd>Esc</kbd> Finish</span></> : <><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> Direction</span><span><kbd>Enter</kbd> Select / edit</span><span>Type to edit</span><span><kbd>Esc</kbd> Back</span><span>Two arrows for diagonals</span></>}</div>
           <div className="legend"><span><i className="legend-highlight"/>Highlight</span><span><i className="legend-focus"/>Focus</span><span><i className="legend-input"/>Input</span></div>
         </footer>
       </section>

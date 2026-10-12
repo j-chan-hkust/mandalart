@@ -1,4 +1,4 @@
-import { emptyBoard, validBoard } from './model';
+import { emptyBoard, singleLineBoard, validBoard } from './model';
 import type { BoardDocument } from './model';
 import { appearancePreference } from './themes';
 export const STORAGE_KEY = 'mandalart.state.v1';
@@ -11,12 +11,12 @@ export function loadState(storage: Pick<Storage, 'getItem'>): LoadResult {
     if (raw === null) return { state: fallback, error: null, writable: true };
     const data = JSON.parse(raw) as SavedState;
     if (!data || data.version !== 1 || !validBoard(data.board)) throw new Error('Invalid saved state');
-    return { state: { version: 1, board: data.board, ...(typeof data.theme === 'string' ? { theme: appearancePreference(data.theme) } : {}) }, error: null, writable: true };
+    return { state: { version: 1, board: singleLineBoard(data.board), ...(typeof data.theme === 'string' ? { theme: appearancePreference(data.theme) } : {}) }, error: null, writable: true };
   } catch {
     return { state: fallback, error: 'Saved data could not be loaded. Autosave is paused to protect it. Use Clear to start again.', writable: false };
   }
 }
 export function saveState(storage: Pick<Storage, 'setItem'>, board: BoardDocument, theme?: string) {
-  storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, board, ...(theme ? { theme: appearancePreference(theme) } : {}) } satisfies SavedState));
+  storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, board: singleLineBoard(board), ...(theme ? { theme: appearancePreference(theme) } : {}) } satisfies SavedState));
 }
 export function clearState(storage: Pick<Storage, 'removeItem'>) { storage.removeItem(STORAGE_KEY); }

@@ -22,7 +22,7 @@ export function CellEditor({ textareaRef, style, value, label, mainGoal, onChang
     const resize = () => {
       const frameStyle = getComputedStyle(frame);
       const available = frame.clientHeight - parseFloat(frameStyle.paddingTop) - parseFloat(frameStyle.paddingBottom);
-      // Measure the same line boxes as display text, including a final blank line.
+      // Measure the same naturally wrapped line boxes as display text.
       // scrollHeight rounds fractional line heights and can shift the caret/text.
       textarea.style.overflowY = 'hidden';
       measure.style.width = `${textarea.getBoundingClientRect().width}px`;

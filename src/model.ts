@@ -14,7 +14,19 @@ export function emptyBoard(): BoardDocument {
 export function targetId(t: Target): string { return t.kind === 'main' ? 'main' : t.kind === 'subgoal' ? `subgoal-${t.subgoal}` : `action-${t.subgoal}-${t.action}`; }
 export function targetLabel(t: Target): string { return t.kind === 'main' ? 'Main goal' : t.kind === 'subgoal' ? `${directionNames[t.subgoal]} subgoal` : `${directionNames[t.subgoal]} subgoal, ${directionNames[t.action]} action`; }
 export function readText(board: BoardDocument, t: Target): string { return t.kind === 'main' ? board.mainGoal : t.kind === 'subgoal' ? board.subgoals[t.subgoal].title : board.subgoals[t.subgoal].actions[t.action]; }
+export function singleLineText(value: string): string { return value.replace(/[\r\n\u2028\u2029]+/g, ' '); }
+export function singleLineBoard(board: BoardDocument): BoardDocument {
+  return {
+    ...board,
+    mainGoal: singleLineText(board.mainGoal),
+    subgoals: Object.fromEntries(directions.map(direction => [direction, {
+      title: singleLineText(board.subgoals[direction].title),
+      actions: Object.fromEntries(directions.map(action => [action, singleLineText(board.subgoals[direction].actions[action])])),
+    }])) as BoardDocument['subgoals'],
+  };
+}
 export function writeText(board: BoardDocument, t: Target, value: string): BoardDocument {
+  value = singleLineText(value);
   if (t.kind === 'main') return { ...board, mainGoal: value };
   const goal = board.subgoals[t.subgoal];
   return { ...board, subgoals: { ...board.subgoals, [t.subgoal]: t.kind === 'subgoal' ? { ...goal, title: value } : { ...goal, actions: { ...goal.actions, [t.action]: value } } } };

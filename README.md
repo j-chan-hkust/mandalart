@@ -16,3 +16,33 @@ then, for the concrete actions, selection of the box works much the same way, us
 
 I'm not particular about the color scheme, CSS styling. I guess shadcn is a good default. the only thing I am particular about is using color to signify the difference between "highlighted"(i.e. not focused), "focus" (i.e. no text entry), and "input" modes.
 
+## Running the app
+
+Requires Node.js 20.19+ or 22.12+ and npm.
+
+```sh
+npm install
+npm run dev
+```
+
+Open the local URL printed by Vite. This is a desktop, keyboard-centric app with one board saved in the current browser. See [SPECIFICATIONS.md](SPECIFICATIONS.md) for the agreed behavior.
+
+## Keyboard controls
+
+- Arrow keys highlight a child relative to the focused main goal or subgoal. Hold two perpendicular arrows together for a diagonal; opposing arrows cancel.
+- Enter focuses a highlighted subgoal or opens text input. Highlighted actions open input immediately.
+- In input mode, Enter inserts a newline. Escape or Command+Enter (macOS) / Ctrl+Enter (Windows/Linux) finishes editing while keeping the text.
+- Escape from a subgoal returns to the main goal. Tab follows normal browser focus navigation.
+- Click any cell to edit it immediately. The small arrow on each subgoal opens its action block without editing its title.
+
+Compare Full board and Focused block using the toolbar toggle. Clear deletes the board and layout preference after confirmation. JSON export and PNG output are outside the current scope.
+
+## Validation
+
+```sh
+npm test
+npm run build
+```
+
+Tests cover directional timing, interaction transitions, and local persistence. The build includes strict TypeScript checking. `npm run preview` serves the production build.
+

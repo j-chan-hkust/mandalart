@@ -137,7 +137,7 @@ Switching variants preserves text, navigation context, highlight, and any active
 - **shadcn/ui:** provide supporting controls such as the layout toggle and Clear confirmation dialog.
 - **Browser-local persistence:** keep the single board on the user's browser; the initial app requires no application backend.
 
-Test tooling and detailed implementation choices remain to be specified below.
+Vitest covers the input interpreter, interaction state machine, and storage adapter. Browser verification covers real keyboard events, focus, layout switching with caret preservation, and the Clear dialog.
 
 ### Architecture and data model
 
@@ -173,6 +173,8 @@ Represent input targets explicitly as the main goal, a subgoal direction, or a s
 - Store exactly one board locally in the browser and automatically save edits, including text entered before leaving input mode.
 - Restore saved content after refresh or reopening the app. Start navigation at the main goal as specified above; held keys, input timers, and active editors are transient.
 - Use `localStorage` with versioned, app-specific keys as the proposed storage implementation. Persist the layout preference alongside board content.
+- Implementation: save synchronously on each content or preference change using `mandalart.state.v1`. Its JSON payload contains `{ version: 1, board, layout }`. Transient navigation state is not saved. There are no delayed autosave writes.
+- Validate the saved version, all 73 text fields, and the layout before loading. Invalid saved data remains untouched and autosave is paused until the user explicitly clears it.
 - Handle unavailable storage, failed writes, and invalid saved data explicitly; do not claim an edit was saved when persistence fails.
 - Provide a visible **Clear** button that opens a confirmation dialog before deleting any state.
 - The dialog explains that clearing deletes the locally saved board and app preferences, and provides **Cancel** and **Clear saved state** actions. Initially focus Cancel; Escape cancels. Suspend board keyboard shortcuts while the dialog is open.
@@ -217,3 +219,5 @@ Represent input targets explicitly as the main goal, a subgoal direction, or a s
 ## Open decisions
 
 - Choose the default layout after trying both variants.
+
+The initial implementation starts in Full board mode and remembers the user's layout selection. The final default can be revisited after comparing both variants.

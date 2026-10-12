@@ -41,17 +41,17 @@ On initial load, focus the main goal with no child highlighted and no editor ope
 | Main goal focused, subgoal highlighted | Change highlighted subgoal | Focus that subgoal and clear the highlight | Clear the highlight |
 | Subgoal focused, no highlight | Highlight an action | Open subgoal input | Return focus to the main goal |
 | Subgoal focused, action highlighted | Change highlighted action | Open that action's input immediately | Return focus to the main goal |
-| Main goal input | Normal text cursor movement | Insert a newline | Keep text and return to main goal focus |
-| Subgoal input | Normal text cursor movement | Insert a newline | Keep text and return to that subgoal's focus |
-| Action input | Normal text cursor movement | Insert a newline | Keep text, return focus to the parent subgoal, and retain the action highlight |
+| Main goal input | Normal text cursor movement | Insert a newline | Keep text and focus the main goal with no highlight |
+| Subgoal input | Normal text cursor movement | Insert a newline | Keep text and focus the main goal with no highlight |
+| Action input | Normal text cursor movement | Insert a newline | Keep text and focus the parent subgoal with no highlight |
 
-When returning from a subgoal to the main goal, clear the child highlight. After leaving action input, Enter reopens that action; Escape returns to the main goal.
+Finishing input with Escape or Command/Ctrl+Enter moves to the edited cell's parent level and clears the highlight. Subgoal input returns to the main goal; action input returns to its parent subgoal; main-goal input returns to the main goal. This applies to typing, Enter, and mouse entry, including when switching between editors. Navigation has no dependence on the focus held before editing.
 
 **Switching actions (confirmed):** finish editing with Escape or Command/Ctrl+Enter, use arrow keys from the parent subgoal to highlight another action, then press Enter to edit it. No additional action-switching shortcut is required. Tab and Shift+Tab retain their normal focus-navigation behavior.
 
 Typing a printable character while the board has keyboard focus immediately opens input for the highlighted cell, if any, or the focused goal otherwise, and inserts that character. This includes highlighted subgoals and actions; no Enter is required first. Preserve existing text, append the first character, and place the caret after it. This includes letters, numbers, punctuation, and spaces; command/control/alt shortcuts do not start editing. Enter still selects the highlighted child. Escape exits input without discarding text. While editing, arrow keys belong to the text field, and navigation shortcuts must not interfere with text composition.
 
-**Confirmed input shortcuts:** Enter inserts a newline. Command+Enter on macOS and Ctrl+Enter on Windows/Linux finish editing with exactly the same transition as Escape, preserving the text without inserting a newline. For action input, this returns focus to the parent subgoal and retains the action highlight; actions never gain a separate focused state. Finishing editing is not required for autosave.
+**Confirmed input shortcuts:** Enter inserts a newline. Command+Enter on macOS and Ctrl+Enter on Windows/Linux finish editing with exactly the same transition as Escape, preserving the text without inserting a newline and moving to the edited cell's parent level with no highlight. Actions never gain a separate focused state. Finishing editing is not required for autosave.
 
 ### Directional selection (confirmed)
 
@@ -115,7 +115,7 @@ Research background: [Godot's input API](https://docs.godotengine.org/en/4.6/cla
 ### Mouse interaction (confirmed)
 
 - Clicking any text cell immediately opens its editor, including either representation of a subgoal title. No preliminary focus-only click is required.
-- Opening an action editor sets its parent subgoal as the navigation context. Leaving input follows the same transitions as keyboard editing.
+- Opening an action editor temporarily activates its parent subgoal. Leaving action input focuses its parent subgoal with no highlight, just as keyboard editing does.
 - Provide a separate, clearly labeled control for each subgoal to focus its action block in place without editing the title.
 - Activating that control must not also open the title editor. It must be usable with mouse and keyboard.
 - Switching to another cell preserves edits to the previous cell and opens the new editor immediately.
@@ -193,7 +193,8 @@ Represent input targets explicitly as the main goal, a subgoal direction, or a s
 - Enter on a highlighted subgoal focuses it; another Enter opens its title editor.
 - A title change appears in both subgoal representations.
 - Enter on a highlighted action opens input immediately, with no intermediate focused-action state.
-- Escape from action input retains its highlight within the parent subgoal; another Escape returns to the main goal.
+- Finishing action input focuses its parent subgoal and clears the action highlight; another Escape returns to the main goal.
+- Finishing subgoal input focuses the main goal and clears the subgoal highlight, regardless of how editing began. Finishing after switching editors returns to the final edited cell’s parent.
 - Slightly staggered, overlapping diagonal key presses and uneven releases select and retain the intended diagonal.
 - Non-overlapping Up then Left taps select north then west, never northwest.
 - Holding one direction beyond the diagonal release tolerance switches to that direction.

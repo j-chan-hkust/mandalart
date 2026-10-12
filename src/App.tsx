@@ -28,6 +28,7 @@ export default function App() {
   const [editorStyle, setEditorStyle] = useState<CSSProperties>({});
   const surfaceRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const initialCaret = useRef<number | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const resetFocus = useRef(false);
   const stateRef = useRef(interaction);
@@ -75,6 +76,15 @@ export default function App() {
       event.preventDefault(); input.down(event.key, event.repeat);
     } else if (event.key === 'Enter' || event.key === 'Escape') {
       event.preventDefault(); if (!event.repeat) send({ type: event.key === 'Enter' ? 'enter' : 'escape' });
+    } else if (Array.from(event.key).length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      event.preventDefault();
+      const textTarget = highlightedTarget(stateRef.current) ?? focusedTarget(stateRef.current);
+      const value = readText(board, textTarget) + event.key;
+      const next = writeText(board, textTarget, value);
+      initialCaret.current = value.length;
+      setBoard(next);
+      persist(next, layout);
+      send({ type: 'edit', target: textTarget });
     }
   }
   useEffect(() => {
@@ -104,7 +114,13 @@ export default function App() {
     return () => { observer.disconnect(); window.removeEventListener('resize', position); };
   }, [editorId, layout, interaction.context]);
   useLayoutEffect(() => {
-    if (editorId) textareaRef.current?.focus({ preventScroll: true });
+    if (editorId) {
+      textareaRef.current?.focus({ preventScroll: true });
+      if (initialCaret.current !== null) {
+        textareaRef.current?.setSelectionRange(initialCaret.current, initialCaret.current);
+        initialCaret.current = null;
+      }
+    }
     else surfaceRef.current?.focus({ preventScroll: true });
   }, [editorId, interaction.context]);
   const focusId = targetId(focusedTarget(interaction));
@@ -118,8 +134,6 @@ export default function App() {
     const placeholder = target.kind === 'main' ? 'What do you want to achieve?' : target.kind === 'subgoal' ? 'Add a subgoal' : 'Add an action';
     return <div key={index} className={`cell ${target.kind === 'main' ? 'main-cell' : ''} ${target.kind === 'subgoal' ? 'subgoal-cell' : ''} ${focused ? 'is-focused' : ''} ${highlightedCell ? 'is-highlighted' : ''} ${editingCell ? 'is-input' : ''}`} data-target={id} data-anchor={anchor ? id : undefined}>
       <button tabIndex={-1} className="cell-text" aria-label={`Edit ${targetLabel(target)}${text ? `: ${text}` : ''}`} onClick={() => send({ type: 'edit', target })}>
-        {target.kind === 'main' && <span className="cell-eyebrow">THE BIG PICTURE</span>}
-        {target.kind === 'subgoal' && !central && <span className="cell-eyebrow">{directionNames[target.subgoal]}</span>}
         <span className={text ? 'cell-value' : 'cell-placeholder'}>{text || placeholder}</span>
       </button>
       {target.kind === 'subgoal' && <button className="open-block" aria-label={`Open ${directionNames[target.subgoal]} action block`} title="Focus this action block" onClick={() => send({ type: 'open', direction: target.subgoal })}><ArrowUpRight size={13}/></button>}
@@ -173,7 +187,7 @@ export default function App() {
         </div>
         <footer className="workspace-footer">
           <div className="mode-indicator" aria-live="polite"><span className={`mode-dot ${editor ? 'input-dot' : 'focus-dot'}`}/>{editor ? 'Input' : 'Focus'}</div>
-          <div className="keyboard-guide">{editor ? <><span><kbd>Enter</kbd> New line</span><span><kbd><Command size={11}/>/ Ctrl</kbd><kbd>Enter</kbd> Finish</span><span><kbd>Esc</kbd> Finish</span></> : <><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> Direction</span><span><kbd>Enter</kbd> Select / edit</span><span><kbd>Esc</kbd> Back</span><span>Two arrows for diagonals</span></>}</div>
+          <div className="keyboard-guide">{editor ? <><span><kbd>Enter</kbd> New line</span><span><kbd><Command size={11}/>/ Ctrl</kbd><kbd>Enter</kbd> Finish</span><span><kbd>Esc</kbd> Finish</span></> : <><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> Direction</span><span><kbd>Enter</kbd> Select / edit</span><span>Type to edit</span><span><kbd>Esc</kbd> Back</span><span>Two arrows for diagonals</span></>}</div>
           <div className="legend"><span><i className="legend-highlight"/>Highlight</span><span><i className="legend-focus"/>Focus</span><span><i className="legend-input"/>Input</span></div>
         </footer>
       </section>

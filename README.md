@@ -31,6 +31,7 @@ Open the local URL printed by Vite. This is a desktop, keyboard-centric app with
 
 - Arrow keys highlight a child relative to the focused main goal or subgoal. Hold two perpendicular arrows together for a diagonal; opposing arrows cancel.
 - Enter focuses a highlighted subgoal or opens text input. Highlighted actions open input immediately.
+- Typing opens the highlighted cell's editor, or the focused goal's editor if nothing is highlighted, preserving the first character and appending to existing text.
 - In input mode, Enter inserts a newline. Escape or Command+Enter (macOS) / Ctrl+Enter (Windows/Linux) finishes editing while keeping the text.
 - Escape from a subgoal returns to the main goal. Tab follows normal browser focus navigation.
 - Click any cell to edit it immediately. The small arrow on each subgoal opens its action block without editing its title.

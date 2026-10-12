@@ -49,7 +49,7 @@ When returning from a subgoal to the main goal, clear the child highlight. After
 
 **Switching actions (confirmed):** finish editing with Escape or Command/Ctrl+Enter, use arrow keys from the parent subgoal to highlight another action, then press Enter to edit it. No additional action-switching shortcut is required. Tab and Shift+Tab retain their normal focus-navigation behavior.
 
-Typing starts only after entering input mode. Escape exits input without discarding text. While editing, arrow keys belong to the text field, and navigation shortcuts must not interfere with text composition.
+Typing a printable character while the board has keyboard focus immediately opens input for the highlighted cell, if any, or the focused goal otherwise, and inserts that character. This includes highlighted subgoals and actions; no Enter is required first. Preserve existing text, append the first character, and place the caret after it. This includes letters, numbers, punctuation, and spaces; command/control/alt shortcuts do not start editing. Enter still selects the highlighted child. Escape exits input without discarding text. While editing, arrow keys belong to the text field, and navigation shortcuts must not interfere with text composition.
 
 **Confirmed input shortcuts:** Enter inserts a newline. Command+Enter on macOS and Ctrl+Enter on Windows/Linux finish editing with exactly the same transition as Escape, preserving the text without inserting a newline. For action input, this returns focus to the parent subgoal and retains the action highlight; actions never gain a separate focused state. Finishing editing is not required for autosave.
 
@@ -112,6 +112,7 @@ Switching variants preserves text, navigation context, highlight, and any active
 
 - Fit the complete board and essential controls within the desktop browser viewport, including laptop screens, without page scrolling. Size grid rows from available viewport height; long text scrolls within its cell/editor.
 - Keep the interface limited to the board, layout and Clear controls, save status, and compact keyboard/mode guidance. Omit decorative headings, slogans, progress counters, and subtree breadcrumbs.
+- Cells show their content or an empty-cell placeholder, without decorative captions or visible compass-direction labels. Retain descriptive accessibility labels.
 - Use distinct colors for highlight, focus, and input modes, as requested in the README.
 - Supplement color with structural cues: a tinted highlight, a strong focus outline, and a recognizable text field with a caret.
 - Make the active navigation context clear even when a different cell is highlighted.
@@ -196,6 +197,7 @@ Represent input targets explicitly as the main goal, a subgoal direction, or a s
 ## Acceptance scenarios
 
 - Initial focus is the main goal; Enter opens its editor and Escape exits without losing text.
+- Typing opens the highlighted cell's editor when a highlight exists, or the focused goal's editor otherwise; it retains the first character, appends to existing text, and saves immediately. Keyboard shortcuts and Tab do not trigger input.
 - Highlighting a subgoal marks both of its visible representations.
 - Enter on a highlighted subgoal focuses it; another Enter opens its title editor.
 - A title change appears in both subgoal representations.
